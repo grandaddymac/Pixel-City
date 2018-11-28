@@ -12,11 +12,19 @@ import CoreLocation
 
 class MapVC: UIViewController, UIGestureRecognizerDelegate {
 
+   
+    @IBOutlet weak var pullUpViewHeightConstraint: NSLayoutConstraint!
+
     @IBOutlet weak var mapView: MKMapView!
+    
+    @IBOutlet weak var pullUpView: UIView!
     
     var locationManager = CLLocationManager()
     let authorizationStatus = CLLocationManager.authorizationStatus()
     let regionRadius: Double = 1000
+    var spinner: UIActivityIndicatorView?
+    var progressLabel: UILabel?
+    var screenSize = UIScreen.main.bounds
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -33,6 +41,35 @@ class MapVC: UIViewController, UIGestureRecognizerDelegate {
         mapView.addGestureRecognizer(doubleTap)
     }
     
+    func addSwipe() {
+        let swipe = UISwipeGestureRecognizer(target: self, action: #selector(animateViewDown))
+        swipe.direction = .down
+        pullUpView.addGestureRecognizer(swipe)
+    }
+    
+    func animateViewUp() {
+        pullUpViewHeightConstraint.constant = 300
+        UIView.animate(withDuration: 0.3) {
+        self.view.layoutIfNeeded()
+        }
+    }
+    
+    @objc func animateViewDown() {
+        pullUpViewHeightConstraint.constant = 0
+        UIView.animate(withDuration: 0.3) {
+            self.view.layoutIfNeeded()
+        }
+    }
+    
+    func addSpinner() {
+        spinner = UIActivityIndicatorView()
+        spinner?.center = CGPoint(x: (screenSize.width / 2) - ((spinner?.frame.width)! / 2), y: 150)
+        spinner?.style = .whiteLarge
+        spinner?.color = #colorLiteral(red: 0.2549019754, green: 0.2745098174, blue: 0.3019607961, alpha: 1)
+        spinner?.startAnimating()
+        pullUpView.addSubview(spinner!)
+    }
+    
     @IBAction func centerMapButtonPressed(_ sender: Any) {
         if authorizationStatus == .authorizedAlways || authorizationStatus == .authorizedWhenInUse {
         centerMapOnUserLocation()
@@ -41,8 +78,25 @@ class MapVC: UIViewController, UIGestureRecognizerDelegate {
 }
 
 extension MapVC: MKMapViewDelegate {
+    //Custom Pin color
+    func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
+        // Show Blue dot rather than custom pin and disalow user pin on current location
+        if annotation is MKUserLocation {
+            return nil
+        }
+        
+        let pinAnnotation = MKPinAnnotationView(annotation: annotation, reuseIdentifier: "droppablePin")
+        pinAnnotation.pinTintColor = #colorLiteral(red: 0.9771530032, green: 0.7062081099, blue: 0.1748393774, alpha: 1)
+        pinAnnotation.animatesDrop = true
+        return pinAnnotation
+    }
+    
     @objc func dropPin(sender: UITapGestureRecognizer) {
         removePin()
+        animateViewUp()
+        addSwipe()
+        addSpinner()
+        
         let touchPoint = sender.location(in: mapView)
         let touchCoordinate = mapView.convert(touchPoint, toCoordinateFrom: mapView)
        
