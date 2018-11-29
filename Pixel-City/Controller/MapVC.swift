@@ -47,6 +47,8 @@ class MapVC: UIViewController, UIGestureRecognizerDelegate {
         collectionView?.backgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1)
         
         pullUpView.addSubview(collectionView!)
+        //3D touch
+        registerForPreviewing(with: self, sourceView: collectionView!)
     }
 
     func addDoubleTap(){
@@ -254,5 +256,32 @@ extension MapVC: UICollectionViewDelegate, UICollectionViewDataSource {
         cell.addSubview(imageView)
         return cell
     }
+    
+    //instantiate the view controller from stroyboard
+    func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
+        guard let popVC = storyboard?.instantiateViewController(withIdentifier: "PopVC") as? PopVC else { return }
+        popVC.initData(forImage: imageArray[indexPath.row])
+        present(popVC, animated: true, completion: nil)
+    }
+    
+}
+//3D Touch
+extension MapVC: UIViewControllerPreviewingDelegate {
+    //pop
+    func previewingContext(_ previewingContext: UIViewControllerPreviewing, viewControllerForLocation location: CGPoint) -> UIViewController? {
+        guard let indexPath = collectionView?.indexPathForItem(at: location), let cell = collectionView?.cellForItem(at: indexPath) else { return nil }
+        //what are we popping?
+        guard let popVC = storyboard?.instantiateViewController(withIdentifier: "PopVC") as? PopVC else { return nil }
+        //what image are we showing?
+        popVC.initData(forImage: imageArray[indexPath.row])
+        //the zoom frame
+        previewingContext.sourceRect = cell.contentView.frame
+        return popVC
+    }
+    //peek
+    func previewingContext(_ previewingContext: UIViewControllerPreviewing, commit viewControllerToCommit: UIViewController) {
+        show(viewControllerToCommit, sender: self)
+    }
+    
     
 }
